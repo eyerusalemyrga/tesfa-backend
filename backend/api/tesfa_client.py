@@ -16,8 +16,10 @@ def query_tesfa(query, region=None, conflict_type=None):
     """
     url = settings.TESFA_AI_URL.rstrip('/') + '/api/query'
     payload = {"query": query, "region": region, "conflict_type": conflict_type}
+    # The deployed Tesfa AI requires its TESFA_API_KEY in the X-API-Key header.
+    headers = {"X-API-Key": settings.TESFA_AI_API_KEY} if settings.TESFA_AI_API_KEY else {}
     try:
-        response = requests.post(url, json=payload, timeout=settings.TESFA_AI_TIMEOUT)
+        response = requests.post(url, json=payload, headers=headers, timeout=settings.TESFA_AI_TIMEOUT)
     except requests.Timeout:
         raise TesfaAIError("Tesfa AI took too long to respond.", 504)
     except requests.RequestException:

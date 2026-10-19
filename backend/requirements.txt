@@ -8,6 +8,7 @@ django-cors-headers==4.9.0
 djangorestframework==3.18.3
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.30.0
+gunicorn==23.0.0
 idna==3.20
 inflection==0.5.1
 jsonschema==4.26.0
@@ -25,3 +26,4 @@ sqlparse==0.6.0
 typing_extensions==4.16.0
 uritemplate==4.2.0
 urllib3==2.8.0
+whitenoise==6.9.0

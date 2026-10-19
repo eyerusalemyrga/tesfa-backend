@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: tesfa-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    # Free plan has no pre-deploy step or shell, so migrations and the first admin run at build time.
+    # createsuperuser fails harmlessly once the admin already exists.
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput &&
+      (python manage.py createsuperuser --noinput || true)
+    startCommand: gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --timeout 120
+    healthCheckPath: /api/schema/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false          # your frontend URL(s), comma-separated
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false          # e.g. https://tesfa-backend.onrender.com
+      - key: DATABASE_URL
+        sync: false          # this backend's own Postgres (users, conversations, feedback)
+      - key: TESFA_DATABASE_URL
+        sync: false          # same Supabase "Session pooler" string Tesfa AI uses (read-only here)
+      - key: TESFA_AI_URL
+        sync: false          # e.g. https://tesfa-api.onrender.com
+      - key: TESFA_AI_API_KEY
+        sync: false          # copy TESFA_API_KEY from the tesfa-api service on Render
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      - key: DJANGO_SUPERUSER_PHONE_NUMBER
+        sync: false
+      - key: DJANGO_SUPERUSER_FIRST_NAME
+        sync: false
+      - key: DJANGO_SUPERUSER_LAST_NAME
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false          # Gmail address for OTP emails (leave empty to log them instead)
+      - key: EMAIL_HOST_PASSWORD
+        sync: false          # Gmail app password

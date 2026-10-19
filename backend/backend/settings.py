@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -123,15 +124,19 @@ else:
     }
 
 # Tesfa AI's own database, read-only: countries, conflicts and predictions for the graphs.
-DATABASES['tesfa'] = {
-    'ENGINE': 'django.db.backends.postgresql',
-    'NAME': os.getenv('TESFA_DB_NAME'),
-    'USER': os.getenv('TESFA_DB_USER'),
-    'PASSWORD': os.getenv('TESFA_DB_PASSWORD'),
-    'HOST': os.getenv('TESFA_DB_HOST'),
-    'PORT': os.getenv('TESFA_DB_PORT'),
-    'OPTIONS': {'options': '-c default_transaction_read_only=on'},
-}
+# TESFA_DATABASE_URL (e.g. the Supabase connection string Tesfa AI uses) takes priority over TESFA_DB_*.
+if os.getenv('TESFA_DATABASE_URL'):
+    DATABASES['tesfa'] = dj_database_url.parse(os.environ['TESFA_DATABASE_URL'], conn_max_age=600)
+else:
+    DATABASES['tesfa'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('TESFA_DB_NAME'),
+        'USER': os.getenv('TESFA_DB_USER'),
+        'PASSWORD': os.getenv('TESFA_DB_PASSWORD'),
+        'HOST': os.getenv('TESFA_DB_HOST'),
+        'PORT': os.getenv('TESFA_DB_PORT'),
+    }
+DATABASES['tesfa']['OPTIONS'] = {'options': '-c default_transaction_read_only=on'}
 DATABASE_ROUTERS = ['backend.db_routers.TesfaReadOnlyRouter']
 
 
@@ -173,6 +178,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+# WhiteNoise serves the admin and API docs static files when DEBUG is off.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 
 
 MEDIA_URL = '/media/'
@@ -206,6 +217,7 @@ SIMPLE_JWT = {
 # Tesfa AI service (FastAPI app exposing POST /api/query)
 TESFA_AI_URL = os.getenv('TESFA_AI_URL', 'http://localhost:8001')
 TESFA_AI_TIMEOUT = int(os.getenv('TESFA_AI_TIMEOUT', 95))
+TESFA_AI_API_KEY = os.getenv('TESFA_AI_API_KEY', '')
 
 
 # Email
